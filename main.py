@@ -342,7 +342,6 @@ def summarize_clusters(clusters):
     # candidate gene count
     # known percentage
     # candidate gene names
-    pass
 
 
 def find_best_cluster(cluster_summary):
@@ -355,7 +354,6 @@ def find_best_cluster(cluster_summary):
     # TODO:
     # Compare known percentages
     # Return the cluster with highest known percentage
-    pass
 
 
 # ============================================================
