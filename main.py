@@ -26,19 +26,6 @@ SKIPPED_FILE = "skipped_genes.txt"
 # ============================================================
 
 def read_interested_genes(filename):
-    """
-    Read interested_genes.txt.
-
-    Return:
-        candidate_genes: list of candidate gene names
-        known_genes: list of known longevity gene names
-    """
-    # TODO:
-    # 1. Open interested_genes.txt
-    # 2. Read all lines
-    # 3. Separate candidate genes and known longevity genes
-    # 4. Return two lists
-def read_interested_genes(filename):
     candidate_genes = []
     known_genes = []
 
@@ -76,19 +63,6 @@ def read_interested_genes(filename):
     return candidate_genes, known_genes
 
 def clean_gene_name(gene_name):
-    """
-    Clean gene name text.
-
-    Example:
-        Remove spaces, newline characters, etc.
-
-    Return:
-        cleaned gene name
-    """
-    # TODO:
- # Remove unnecessary spaces or newline characters
-
-def clean_gene_name(gene_name):
     gene_name = gene_name.strip()
     gene_name = gene_name.replace("\ufeff", "")
     gene_name = gene_name.replace(",", "")
@@ -99,21 +73,6 @@ def clean_gene_name(gene_name):
 # PART 2: READ DATASET
 # Owner: Thành
 # ============================================================
-
-def read_dataset(filename):
-    """
-    Read Longotor1delta.csv.
-
-    Return:
-        dataset: list containing all rows from the dataset
-        header: first row of the dataset
-    """
-    # TODO:
-    # 1. Open Longotor1delta.csv
-    # 2. Read lines
-    # 3. Split each line by comma
-    # 4. Store rows in a list
-    # 5. Return header and dataset
 
 def read_dataset(filename):
     dataset = []
@@ -136,23 +95,6 @@ def read_dataset(filename):
 
     return dataset, header
 
-
-def find_gene_columns(header):
-    """
-    Find the important column indexes.
-
-    Return:
-        gene_id_col
-        gene_name_col
-        expression_cols
-   """
-   
-    # TODO:
-    # Find which column contains gene ID
-    # Find which column contains gene name
-    # Find expression value columns, such as:
-   # sch9/wt, ras2/wt, tor1/wt
-
 def find_gene_columns(header):
     gene_id_col = -1
     gene_name_col = -1
@@ -172,18 +114,6 @@ def find_gene_columns(header):
 
     return gene_id_col, gene_name_col, expression_cols
 
-
-def convert_to_float(value):
-    """
-    Convert a string value to float.
-
-    Return:
-        float number
-    """
-    # TODO:
-    # Convert value to float
-    # If value is missing or invalid, handle it carefully
-
 def convert_to_float(value):
     value = value.strip()
 
@@ -202,25 +132,6 @@ def convert_to_float(value):
 # Owner: Thành
 # ============================================================
 
-def filter_interested_genes(dataset, gene_id_col, gene_name_col, expression_cols,
-                            candidate_genes, known_genes):
-    """
-    Keep only genes listed in interested_genes.txt.
-
-    Return:
-        filtered_data
-        skipped_genes
-    """
-    # TODO:
-    # 1. Go through each row in dataset
-    # 2. Check whether gene ID or gene name is in candidate_genes or known_genes
-    # 3. If matched, keep the gene
-    # 4. If not found, skip it
-    # 5. Each kept gene should contain:
-    #    gene_id, gene_name, expression_values, gene_type
-    #
-    # gene_type should be:
-    # "candidate" or "known"
 
 def filter_interested_genes(dataset, gene_id_col, gene_name_col, expression_cols,
                             candidate_genes, known_genes):
@@ -269,22 +180,13 @@ def filter_interested_genes(dataset, gene_id_col, gene_name_col, expression_cols
 
     return filtered_data, skipped_genes
                                 
+ 
 def save_skipped_genes(skipped_genes, filename):
-    """
-    Save skipped genes to skipped_genes.txt.
-
-    Return:
-        nothing
-    """
-# TODO:
-# Write skipped gene names into a text file
+    f   = open(filename, "w", encoding="utf-8")
  
-    def save_skipped_genes(skipped_genes, filename):
-        f   = open(filename, "w", encoding="utf-8")
- 
-        for gene in skipped_genes:
-           f.write(gene + "\n")
-        f.close()
+    for gene in skipped_genes:
+        f.write(gene + "\n")
+    f.close()
 
 # ============================================================
 # PART 4: NORMALIZATION
@@ -292,15 +194,6 @@ def save_skipped_genes(skipped_genes, filename):
 # ============================================================
 
 def find_min_values(data, expression_cols):
-    """
-    Find minimum value for each expression column.
-
-    Return:
-        min_values
-    """
-    # TODO:
-    # For each expression column, find the minimum value
-
     min_vals = {}
     for col in expression_cols:
         min_val = float('inf')
@@ -315,15 +208,6 @@ def find_min_values(data, expression_cols):
     return min_vals
 
 def find_max_values(data, expression_cols):
-    """
-    Find maximum value for each expression column.
-
-    Return:
-        max_values
-    """
-    # TODO:
-    # For each expression column, find the maximum value
-
     max_vals = {}
     for col in expression_cols:
         max_val = float('-inf')
@@ -338,21 +222,6 @@ def find_max_values(data, expression_cols):
     return max_vals
 
 def min_max_normalize(data, expression_cols):
-    """
-    Normalize expression values using min-max normalization.
-
-    Formula:
-        new_value = (old_value - min_value) / (max_value - min_value)
-
-    Return:
-        normalized_data
-    """
-    # TODO:
-    # 1. Find min values
-    # 2. Find max values
-    # 3. Normalize each expression value
-    # 4. Return normalized data
-
     mins = find_min_values(data, expression_cols)
     maxs = find_max_values(data, expression_cols)
     
@@ -372,14 +241,6 @@ def min_max_normalize(data, expression_cols):
 # ============================================================
 
 def euclidean_distance(point1, point2, expression_cols):
-    """
-    Calculate Euclidean distance between two points.
-
-    Return:
-        distance
-    """
-    # TODO:
-    # Use loop to calculate distance manually
     dist_sq = 0
     for col in expression_cols:
         dist_sq += (float(point1[col]) - float(point2[col])) ** 2
@@ -387,29 +248,10 @@ def euclidean_distance(point1, point2, expression_cols):
 
 
 def choose_initial_centroids(data, k):
-    """
-    Choose initial centroids for K-means.
-
-    Return:
-        centroids
-    """
-    # TODO:
-    # Simple method:
-    # Use the first k genes as initial centroids
     return data[:k]
 
 
 def assign_to_clusters(data, centroids, expression_cols):
-    """
-    Assign each gene to the nearest centroid.
-
-    Return:
-        clusters
-    """
-    # TODO:
-    # 1. For each gene, calculate distance to each centroid
-    # 2. Find nearest centroid
-    # 3. Put gene into that cluster
     clusters = [[] for _ in range(len(centroids))]
 
     for gene in data:
@@ -421,16 +263,6 @@ def assign_to_clusters(data, centroids, expression_cols):
 
 
 def calculate_new_centroids(clusters, old_centroids, expression_cols):
-    """
-    Calculate new centroids by taking the average of each cluster.
-
-    Return:
-        new_centroids
-    """
-    # TODO:
-    # 1. For each cluster, calculate mean of expression values
-    # 2. If a cluster is empty, keep old centroid
-
     new_centroids = []
 
     for i in range(len(clusters)):
@@ -454,17 +286,6 @@ def calculate_new_centroids(clusters, old_centroids, expression_cols):
 
 
 def clusters_changed(old_clusters, new_clusters):
-    """
-    Check whether cluster assignments changed.
-
-    Return:
-        True or False
-    """
-    # TODO:
-    # Compare old clusters and new clusters
-    # Return True if changed
-    # Return False if not changed
-
     if len(old_clusters) != len(new_clusters):
         return True
     # Compare cluster sizes as a simple check for changes 
