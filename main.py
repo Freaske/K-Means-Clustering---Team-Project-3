@@ -145,7 +145,7 @@ def save_skipped_genes(skipped_genes, filename):
 # Owner: Phong
 # ============================================================
 
-def find_min_values(data):
+def find_min_values(data, expression_cols):
     """
     Find minimum value for each expression column.
 
@@ -155,8 +155,20 @@ def find_min_values(data):
     # TODO:
     # For each expression column, find the minimum value
 
+    min_vals = {}
+    for col in expression_cols:
+        min_val = float('inf')
+        for row in data:
+            try:
+                val = float(row[col])
+                if val < min_val:
+                    min_val = val
+            except (ValueError, KeyError):
+                continue
+        min_vals[col] = min_val
+    return min_vals
 
-def find_max_values(data):
+def find_max_values(data, expression_cols):
     """
     Find maximum value for each expression column.
 
@@ -166,8 +178,20 @@ def find_max_values(data):
     # TODO:
     # For each expression column, find the maximum value
 
+    max_vals = {}
+    for col in expression_cols:
+        max_val = float('-inf')
+        for row in data:
+            try:
+                val = float(row[col])
+                if val > max_val:
+                    max_val = val
+            except (ValueError, KeyError):
+                continue
+        max_vals[col] = max_val
+    return max_vals
 
-def min_max_normalize(data):
+def min_max_normalize(data, expression_cols):
     """
     Normalize expression values using min-max normalization.
 
@@ -183,13 +207,25 @@ def min_max_normalize(data):
     # 3. Normalize each expression value
     # 4. Return normalized data
 
+    mins = find_min_values(data, expression_cols)
+    maxs = find_max_values(data, expression_cols)
+    
+    for row in data:
+        for col in expression_cols:
+            val = float(row[col])
+            denominator = maxs[col] - mins[col]
+            if denominator != 0:
+                row[col] = (val - mins[col]) / denominator
+            else:
+                row[col] = 0.0
+    return data
 
 # ============================================================
 # PART 5: K-MEANS HELPER FUNCTIONS
 # Owner: Phong
 # ============================================================
 
-def euclidean_distance(point1, point2):
+def euclidean_distance(point1, point2, expression_cols):
     """
     Calculate Euclidean distance between two points.
 
@@ -198,6 +234,10 @@ def euclidean_distance(point1, point2):
     """
     # TODO:
     # Use loop to calculate distance manually
+    dist_sq = 0
+    for col in expression_cols:
+        dist_sq += (float(point1[col]) - float(point2[col])) ** 2
+    return dist_sq ** 0.5
 
 
 def choose_initial_centroids(data, k):
@@ -210,9 +250,10 @@ def choose_initial_centroids(data, k):
     # TODO:
     # Simple method:
     # Use the first k genes as initial centroids
+    return data[:k]
 
 
-def assign_to_clusters(data, centroids):
+def assign_to_clusters(data, centroids, expression_cols):
     """
     Assign each gene to the nearest centroid.
 
@@ -223,9 +264,17 @@ def assign_to_clusters(data, centroids):
     # 1. For each gene, calculate distance to each centroid
     # 2. Find nearest centroid
     # 3. Put gene into that cluster
+    clusters = [[] for _ in range(len(centroids))]
+
+    for gene in data:
+        distances = [euclidean_distance(gene, c, expression_cols) for c in centroids]
+        min_idx = distances.index(min(distances))
+        clusters[min_idx].append(gene)
+
+    return clusters
 
 
-def calculate_new_centroids(clusters, old_centroids):
+def calculate_new_centroids(clusters, old_centroids, expression_cols):
     """
     Calculate new centroids by taking the average of each cluster.
 
@@ -235,6 +284,27 @@ def calculate_new_centroids(clusters, old_centroids):
     # TODO:
     # 1. For each cluster, calculate mean of expression values
     # 2. If a cluster is empty, keep old centroid
+
+    new_centroids = []
+
+    for i in range(len(clusters)):
+        cluster = clusters[i]
+        
+        # if empty, keep old_centroids[i]
+        if not cluster:
+            new_centroids.append(old_centroids[i])
+            continue
+            
+        means = {col: 0.0 for col in expression_cols}
+        for gene in cluster:
+            for col in expression_cols:
+                means[col] += float(gene[col])
+        
+        for col in means:
+            means[col] /= len(cluster)
+        new_centroids.append(means)
+
+    return new_centroids
 
 
 def clusters_changed(old_clusters, new_clusters):
@@ -248,6 +318,14 @@ def clusters_changed(old_clusters, new_clusters):
     # Compare old clusters and new clusters
     # Return True if changed
     # Return False if not changed
+
+    if len(old_clusters) != len(new_clusters):
+        return True
+    # Compare cluster sizes as a simple check for changes 
+    for i in range(len(old_clusters)):
+        if len(old_clusters[i]) != len(new_clusters[i]):
+            return True
+    return False
 
 
 # ============================================================
