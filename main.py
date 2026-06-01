@@ -193,46 +193,45 @@ def save_skipped_genes(skipped_genes, filename):
 # Owner: Phong
 # ============================================================
 
-def find_min_values(data, expression_cols):
-    min_vals = {}
-    for col in expression_cols:
-        min_val = float('inf')
-        for row in data:
-            try:
-                val = float(row[col])
-                if val < min_val:
-                    min_val = val
-            except (ValueError, KeyError):
-                continue
-        min_vals[col] = min_val
+def find_min_values(data):
+    if not data: return []
+
+    num_fields = len(data[0]["expression_values"])
+    min_vals = [float('inf')] * num_fields
+    
+    for row in data:
+        values = row["expression_values"]
+        for idx in range(num_fields):
+            if values[idx] is not None and values[idx] < min_vals[idx]:
+                min_vals[idx] = values[idx]
     return min_vals
 
-def find_max_values(data, expression_cols):
-    max_vals = {}
-    for col in expression_cols:
-        max_val = float('-inf')
-        for row in data:
-            try:
-                val = float(row[col])
-                if val > max_val:
-                    max_val = val
-            except (ValueError, KeyError):
-                continue
-        max_vals[col] = max_val
+def find_max_values(data):
+    
+    if not data: return []
+    num_fields = len(data[0]["expression_values"])
+    max_vals = [float('-inf')] * num_fields
+    
+    for row in data:
+        values = row["expression_values"]
+        for idx in range(num_fields):
+            if values[idx] is not None and values[idx] > max_vals[idx]:
+                max_vals[idx] = values[idx]
     return max_vals
 
 def min_max_normalize(data, expression_cols):
-    mins = find_min_values(data, expression_cols)
-    maxs = find_max_values(data, expression_cols)
+    mins = find_min_values(data)
+    maxs = find_max_values(data)
+    if not data: return data
     
+    num_fields = len(data[0]["expression_values"])
     for row in data:
-        for col in expression_cols:
-            val = float(row[col])
-            denominator = maxs[col] - mins[col]
-            if denominator != 0:
-                row[col] = (val - mins[col]) / denominator
-            else:
-                row[col] = 0.0
+        values = row["expression_values"]
+        for idx in range(num_fields):
+            val = values[idx]
+            if val is not None:
+                denominator = maxs[idx] - mins[idx]
+                values[idx] = (val - mins[idx]) / denominator if denominator != 0 else 0.0
     return data
 
 # ============================================================
@@ -240,10 +239,16 @@ def min_max_normalize(data, expression_cols):
 # Owner: Phong
 # ============================================================
 
-def euclidean_distance(point1, point2, expression_cols):
+def euclidean_distance(point1, point2):
     dist_sq = 0
-    for col in expression_cols:
-        dist_sq += (float(point1[col]) - float(point2[col])) ** 2
+    vals1 = point1["expression_values"]
+    vals2 = point2["expression_values"]
+    
+
+    for idx in range(len(vals1)):
+        v1 = vals1[idx] if vals1[idx] is not None else 0.0
+        v2 = vals2[idx] if vals2[idx] is not None else 0.0
+        dist_sq += (v1 - v2) ** 2
     return dist_sq ** 0.5
 
 
@@ -251,37 +256,37 @@ def choose_initial_centroids(data, k):
     return data[:k]
 
 
-def assign_to_clusters(data, centroids, expression_cols):
+def assign_to_clusters(data, centroids):
     clusters = [[] for _ in range(len(centroids))]
-
     for gene in data:
-        distances = [euclidean_distance(gene, c, expression_cols) for c in centroids]
+        
+        distances = [euclidean_distance(gene, c) for c in centroids]
         min_idx = distances.index(min(distances))
         clusters[min_idx].append(gene)
-
     return clusters
 
 
-def calculate_new_centroids(clusters, old_centroids, expression_cols):
+def calculate_new_centroids(clusters, old_centroids):
     new_centroids = []
+    if not old_centroids: return new_centroids
+    num_fields = len(old_centroids[0]["expression_values"])
 
     for i in range(len(clusters)):
         cluster = clusters[i]
-        
-        # if empty, keep old_centroids[i]
         if not cluster:
             new_centroids.append(old_centroids[i])
             continue
             
-        means = {col: 0.0 for col in expression_cols}
+        means = [0.0] * num_fields
         for gene in cluster:
-            for col in expression_cols:
-                means[col] += float(gene[col])
+            vals = gene["expression_values"]
+            for idx in range(num_fields):
+                means[idx] += vals[idx] if vals[idx] is not None else 0.0
         
-        for col in means:
-            means[col] /= len(cluster)
-        new_centroids.append(means)
-
+        for idx in range(num_fields):
+            means[idx] /= len(cluster)
+            
+        new_centroids.append({"expression_values": means})
     return new_centroids
 
 
