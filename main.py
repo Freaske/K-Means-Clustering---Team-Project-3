@@ -42,7 +42,7 @@ def read_interested_genes(filename):
         lower_line = line.lower()
 
         if line.startswith("#"):
-            if "candidate" in lower_line:
+            if "candidate" in lower_line or "cadidate" in lower_line:
                 current_section = "candidate"
             elif "known" in lower_line or "longevity" in lower_line:
                 current_section = "known"
@@ -305,105 +305,148 @@ def clusters_changed(old_clusters, new_clusters):
 # Owner: Nam
 # ============================================================
 
-def kmeans(data, k, max_iterations):
-    """
-    Run K-means clustering.
+def clusters_are_same(old_clusters, new_clusters):
+    if len(old_clusters) != len(new_clusters):
+        return False
 
-    Return:
-        final_clusters
-        final_centroids
-        iterations_used
-    """
-    # TODO:
-    # 1. Choose initial centroids
-    # 2. Repeat:
-    #       assign genes to nearest centroid
-    #       calculate new centroids
-    #       stop if clusters do not change
-    # 3. Return final clusters, centroids, and number of iterations
+    for i in range(len(old_clusters)):
+        if len(old_clusters[i]) != len(new_clusters[i]):
+            return False
+
+        for j in range(len(old_clusters[i])):
+            old_gene = old_clusters[i][j]
+            new_gene = new_clusters[i][j]
+
+            if old_gene["gene_id"] != new_gene["gene_id"]:
+                return False
+
+            if old_gene["gene_name"] != new_gene["gene_name"]:
+                return False
+
+    return True
+
+def kmeans(data, k, max_iterations):
+    if data == []:
+        return [], [], 0
+
+    if k <= 0:
+        return [], [], 0
+
+    if k > len(data):
+        k = len(data)
+
+    centroids = choose_initial_centroids(data, k)
+
+    if max_iterations <= 0:
+        final_clusters = assign_to_clusters(data, centroids)
+        return final_clusters, centroids, 0
+
+    old_clusters = []
+    final_clusters = []
+    iterations_used = 0
+
+    for iteration in range(max_iterations):
+        new_clusters = assign_to_clusters(data, centroids)
+        new_centroids = calculate_new_centroids(new_clusters, centroids)
+
+        iterations_used += 1
+        final_clusters = new_clusters
+
+        if old_clusters != [] and clusters_are_same(old_clusters, new_clusters):
+            centroids = new_centroids
+            break
+
+        old_clusters = new_clusters
+        centroids = new_centroids
+    return final_clusters, centroids, iterations_used
 
 
 def calculate_sse(clusters, centroids):
-    """
-    Calculate Sum of Squared Errors.
-
-    Return:
-        sse
-    """
-    # TODO:
-    # For each gene:
-    #   calculate distance to its cluster centroid
-    #   square the distance
-    #   add to total SSE
+    sse = 0.0
+    for i in range(len(clusters)):
+        cluster = clusters[i]
+        centroid = centroids[i]
+        for gene in cluster:
+            distance = euclidean_distance(gene, centroid)
+            sse = sse + distance ** 2
+    return sse
 
 
 # ============================================================
 # PART 7: ANALYZE CLUSTER RESULTS
 # Owner: Nam
 # ============================================================
-
 def count_gene_types(cluster):
-    """
-    Count candidate genes and known longevity genes in one cluster.
-
-    Return:
-        candidate_count
-        known_count
-    """
-    # TODO:
-    # Count how many genes are candidate
-    # Count how many genes are known
+    candidate_count = 0
+    known_count = 0
+    for gene in cluster:
+        if gene["gene_type"] == "candidate":
+            candidate_count = candidate_count + 1
+        elif gene["gene_type"] == "known":
+            known_count = known_count + 1
+    return candidate_count, known_count
 
 
 def calculate_known_percentage(cluster):
-    """
-    Calculate percentage of known longevity genes in one cluster.
-
-    Return:
-        known_percentage
-    """
-    # TODO:
-    # known_percentage = known_count / total_genes
+    total_genes = len(cluster)
+    if total_genes == 0:
+        return 0.0
+    candidate_count, known_count = count_gene_types(cluster)
+    known_percentage = (known_count / total_genes) * 100
+    return known_percentage
 
 
 def get_candidate_genes(cluster):
-    """
-    Get candidate gene names from one cluster.
-
-    Return:
-        candidate_gene_list
-    """
-    # TODO:
-    # Return only candidate gene names in the cluster
+    candidate_gene_list = []
+    for gene in cluster:
+        if gene["gene_type"] == "candidate":
+            gene_name = gene["gene_name"]
+            if gene_name == "":
+                gene_name = gene["gene_id"]
+            candidate_gene_list.append(gene_name)
+    return candidate_gene_list
 
 
 def summarize_clusters(clusters):
-    """
-    Create summary information for all clusters.
+    cluster_summary = []
 
-    Return:
-        cluster_summary
-    """
-    # TODO:
-    # For each cluster, record:
-    # cluster ID
-    # cluster size
-    # known gene count
-    # candidate gene count
-    # known percentage
-    # candidate gene names
+    for i in range(len(clusters)):
+        cluster = clusters[i]
+
+        candidate_count, known_count = count_gene_types(cluster)
+        known_percentage = calculate_known_percentage(cluster)
+        candidate_gene_names = get_candidate_genes(cluster)
+
+        cluster_info = {
+            "cluster_id": i + 1,
+            "cluster_size": len(cluster),
+            "known_count": known_count,
+            "candidate_count": candidate_count,
+            "known_percentage": known_percentage,
+            "candidate_genes": candidate_gene_names
+        }
+
+        cluster_summary.append(cluster_info)
+    return cluster_summary
 
 
 def find_best_cluster(cluster_summary):
-    """
-    Find cluster with highest known longevity gene percentage.
+    if cluster_summary == []:
+        return None
 
-    Return:
-        best_cluster_info
-    """
-    # TODO:
-    # Compare known percentages
-    # Return the cluster with highest known percentage
+    best_cluster_info = cluster_summary[0]
+
+    for i in range(1, len(cluster_summary)):
+        current_cluster_info = cluster_summary[i]
+
+        if current_cluster_info["known_percentage"] > best_cluster_info["known_percentage"]:
+            best_cluster_info = current_cluster_info
+
+        elif current_cluster_info["known_percentage"] == best_cluster_info["known_percentage"]:
+            if current_cluster_info["known_count"] > best_cluster_info["known_count"]:
+                best_cluster_info = current_cluster_info
+
+    return best_cluster_info
 
 
 # ============================================================
