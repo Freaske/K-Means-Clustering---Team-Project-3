@@ -38,7 +38,42 @@ def read_interested_genes(filename):
     # 2. Read all lines
     # 3. Separate candidate genes and known longevity genes
     # 4. Return two lists
+def read_interested_genes(filename):
+    candidate_genes = []
+    known_genes = []
 
+    current_section = ""
+
+    f = open(filename, "r", encoding="utf-8")
+
+    for line in f:
+        line = line.strip()
+
+        if line == "":
+            continue
+
+        lower_line = line.lower()
+
+        if line.startswith("#"):
+            if "candidate" in lower_line:
+                current_section = "candidate"
+            elif "known" in lower_line or "longevity" in lower_line:
+                current_section = "known"
+            continue
+
+        if current_section == "candidate":
+            gene = clean_gene_name(line)
+            if gene != "" and gene not in candidate_genes:
+                candidate_genes.append(gene)
+
+        elif current_section == "known":
+            gene = clean_gene_name(line)
+            if gene != "" and gene not in known_genes:
+                known_genes.append(gene)
+
+    f.close()
+
+    return candidate_genes, known_genes
 
 def clean_gene_name(gene_name):
     """
@@ -51,8 +86,14 @@ def clean_gene_name(gene_name):
         cleaned gene name
     """
     # TODO:
-    # Remove unnecessary spaces or newline characters
+ # Remove unnecessary spaces or newline characters
 
+def clean_gene_name(gene_name):
+    gene_name = gene_name.strip()
+    gene_name = gene_name.replace("\ufeff", "")
+    gene_name = gene_name.replace(",", "")
+    gene_name = gene_name.replace(";", "")
+    return gene_name
 
 # ============================================================
 # PART 2: READ DATASET
@@ -74,6 +115,27 @@ def read_dataset(filename):
     # 4. Store rows in a list
     # 5. Return header and dataset
 
+def read_dataset(filename):
+    dataset = []
+
+    f = open(filename, "r", encoding="utf-8-sig")
+
+    for line in f:
+        line = line.strip()
+
+        if line == "":
+            continue
+
+        row = line.split(";")
+        dataset.append(row)
+
+    f.close()
+
+    header = dataset[0]
+    dataset = dataset[1:]
+
+    return dataset, header
+
 
 def find_gene_columns(header):
     """
@@ -83,12 +145,32 @@ def find_gene_columns(header):
         gene_id_col
         gene_name_col
         expression_cols
-    """
+   """
+   
     # TODO:
     # Find which column contains gene ID
     # Find which column contains gene name
     # Find expression value columns, such as:
-    # sch9/wt, ras2/wt, tor1/wt
+   # sch9/wt, ras2/wt, tor1/wt
+
+def find_gene_columns(header):
+    gene_id_col = -1
+    gene_name_col = -1
+    expression_cols = []
+
+    for i in range(len(header)):
+        col = header[i].strip().lower()
+
+        if col == "public id":
+            gene_id_col = i
+
+        elif col == "gene":
+            gene_name_col = i
+
+        elif col == "sch9/wt" or col == "ras2/wt" or col == "tor1/wt":
+            expression_cols.append(i)
+
+    return gene_id_col, gene_name_col, expression_cols
 
 
 def convert_to_float(value):
@@ -102,7 +184,19 @@ def convert_to_float(value):
     # Convert value to float
     # If value is missing or invalid, handle it carefully
 
+def convert_to_float(value):
+    value = value.strip()
 
+    if value == "":
+        return None
+
+    value = value.replace(",", ".")
+
+    try:
+        number = float(value)
+        return number
+    except:
+        return None
 # ============================================================
 # PART 3: FILTER ONLY INTERESTED GENES
 # Owner: Thành
@@ -128,7 +222,53 @@ def filter_interested_genes(dataset, gene_id_col, gene_name_col, expression_cols
     # gene_type should be:
     # "candidate" or "known"
 
+def filter_interested_genes(dataset, gene_id_col, gene_name_col, expression_cols,
+                            candidate_genes, known_genes):
 
+    filtered_data = []
+    skipped_genes = []
+
+    found_genes = []
+
+    for row in dataset:
+        gene_id = row[gene_id_col].strip()
+        gene_name = row[gene_name_col].strip()
+
+        gene_type = ""
+
+        if gene_id in candidate_genes or gene_name in candidate_genes:
+            gene_type = "candidate"
+        elif gene_id in known_genes or gene_name in known_genes:
+            gene_type = "known"
+
+        if gene_type != "":
+            expression_values = []
+
+            for col in expression_cols:
+                value = convert_to_float(row[col])
+                expression_values.append(value)
+
+            filtered_data.append({
+                "gene_id": gene_id,
+                "gene_name": gene_name,
+                "expression_values": expression_values,
+                "gene_type": gene_type
+            })
+
+            if gene_id in candidate_genes or gene_id in known_genes:
+                found_genes.append(gene_id)
+
+            if gene_name in candidate_genes or gene_name in known_genes:
+                found_genes.append(gene_name)
+
+    all_interested_genes = candidate_genes + known_genes
+
+    for gene in all_interested_genes:
+        if gene not in found_genes:
+            skipped_genes.append(gene)
+
+    return filtered_data, skipped_genes
+                                
 def save_skipped_genes(skipped_genes, filename):
     """
     Save skipped genes to skipped_genes.txt.
@@ -136,9 +276,15 @@ def save_skipped_genes(skipped_genes, filename):
     Return:
         nothing
     """
-    # TODO:
-    # Write skipped gene names into a text file
-
+# TODO:
+# Write skipped gene names into a text file
+ 
+    def save_skipped_genes(skipped_genes, filename):
+        f   = open(filename, "w", encoding="utf-8")
+ 
+        for gene in skipped_genes:
+           f.write(gene + "\n")
+        f.close()
 
 # ============================================================
 # PART 4: NORMALIZATION
