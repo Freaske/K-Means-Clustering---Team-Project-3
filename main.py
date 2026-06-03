@@ -1,12 +1,5 @@
 # ============================================================
 # GROUP 3 - K-MEANS CLUSTERING FINAL PROJECT
-# File: main.py
-#
-# Rules:
-# - Do NOT use sklearn, pandas, numpy, scipy, or built-in KMeans
-# - Use only basic Python knowledge:
-#   file I/O, lists, loops, if/else, functions
-# - Run this file in IDLE or Python compiler
 # ============================================================
 
 
@@ -65,7 +58,6 @@ def read_interested_genes(filename):
 def clean_gene_name(gene_name):
     gene_name = gene_name.strip()
     gene_name = gene_name.replace("\ufeff", "")
-    gene_name = gene_name.replace(",", "")
     gene_name = gene_name.replace(";", "")
     return gene_name
 
@@ -398,12 +390,19 @@ def calculate_known_percentage(cluster):
 
 def get_candidate_genes(cluster):
     candidate_gene_list = []
+
     for gene in cluster:
         if gene["gene_type"] == "candidate":
+            gene_id = gene["gene_id"]
             gene_name = gene["gene_name"]
-            if gene_name == "":
-                gene_name = gene["gene_id"]
-            candidate_gene_list.append(gene_name)
+
+            if gene_name == "" or gene_name == "---":
+                display_name = gene_id
+            else:
+                display_name = gene_id + "/" + gene_name
+
+            candidate_gene_list.append(display_name)
+
     return candidate_gene_list
 
 
