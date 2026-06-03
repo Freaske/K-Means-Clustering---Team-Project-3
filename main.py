@@ -563,23 +563,19 @@ def main():
     print("GROUP 3 - K-MEANS CLUSTERING FINAL PROJECT")
     print("=" * 60)
 
-    # 1. Read interested genes
     candidate_genes, known_genes = read_interested_genes(GENE_FILE)
     print("Candidate genes read:", len(candidate_genes))
     print("Known longevity genes read:", len(known_genes))
 
-    # 2. Read dataset
     dataset, header = read_dataset(DATA_FILE)
     print("Dataset rows read:", len(dataset))
 
-    # 3. Find important columns
     gene_id_col, gene_name_col, expression_cols = find_gene_columns(header)
 
     if gene_id_col == -1 or gene_name_col == -1 or len(expression_cols) == 0:
         print("ERROR: Cannot find required columns in the dataset.")
         return
 
-    # 4. Filter interested genes
     filtered_data, skipped_genes = filter_interested_genes(
         dataset,
         gene_id_col,
@@ -589,7 +585,6 @@ def main():
         known_genes
     )
 
-    # 5. Save skipped genes
     save_skipped_genes(skipped_genes, SKIPPED_FILE)
 
     print("Matched interested genes:", len(filtered_data))
@@ -600,20 +595,16 @@ def main():
         print("ERROR: No interested genes were found in the dataset.")
         return
 
-    # 6. Normalize data
     normalized_data = min_max_normalize(filtered_data, expression_cols)
     print("Normalization finished.")
 
-    # 7. Run experiments with different K values
     k_values = [2, 3, 4, 5, 6]
     max_iterations = 100
 
     all_results = run_experiments(normalized_data, k_values, max_iterations)
 
-    # 8. Save results
     save_results(all_results, RESULT_FILE)
 
-    # 9. Print final message
     print("=" * 60)
     print("PROGRAM FINISHED SUCCESSFULLY")
     print("Experiment results saved to:", RESULT_FILE)
