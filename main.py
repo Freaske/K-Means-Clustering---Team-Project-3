@@ -455,9 +455,6 @@ def find_best_cluster(cluster_summary):
 # ============================================================
 
 def save_results(all_results, filename):
-    """
-    Save experiment results to results.csv.
-    """
     f = open(filename, "w", encoding="utf-8")
 
     f.write("K;Iterations;SSE;Cluster Sizes;Best Cluster ID;Best Cluster Known Percentage;Potential Candidate Genes\n")
@@ -487,9 +484,6 @@ def save_results(all_results, filename):
 
 
 def print_result_summary(k, clusters, sse, iterations_used, cluster_summary):
-    """
-    Print result summary on screen.
-    """
     print("-" * 60)
     print("EXPERIMENT SUMMARY FOR K = {}".format(k))
     print("-" * 60)
@@ -521,9 +515,6 @@ def print_result_summary(k, clusters, sse, iterations_used, cluster_summary):
 # ============================================================
 
 def run_experiments(data, k_values, max_iterations):
-    """
-    Run K-means with different K values.
-    """
     all_results = []
     
     for k in k_values:
@@ -569,19 +560,64 @@ def run_experiments(data, k_values, max_iterations):
 # ============================================================
 
 def main():
-    """
-    Main program flow.
-    """
-    # TODO:
+    print("GROUP 3 - K-MEANS CLUSTERING FINAL PROJECT")
+    print("=" * 60)
+
     # 1. Read interested genes
+    candidate_genes, known_genes = read_interested_genes(GENE_FILE)
+    print("Candidate genes read:", len(candidate_genes))
+    print("Known longevity genes read:", len(known_genes))
+
     # 2. Read dataset
+    dataset, header = read_dataset(DATA_FILE)
+    print("Dataset rows read:", len(dataset))
+
     # 3. Find important columns
+    gene_id_col, gene_name_col, expression_cols = find_gene_columns(header)
+
+    if gene_id_col == -1 or gene_name_col == -1 or len(expression_cols) == 0:
+        print("ERROR: Cannot find required columns in the dataset.")
+        return
+
     # 4. Filter interested genes
+    filtered_data, skipped_genes = filter_interested_genes(
+        dataset,
+        gene_id_col,
+        gene_name_col,
+        expression_cols,
+        candidate_genes,
+        known_genes
+    )
+
     # 5. Save skipped genes
+    save_skipped_genes(skipped_genes, SKIPPED_FILE)
+
+    print("Matched interested genes:", len(filtered_data))
+    print("Skipped genes:", len(skipped_genes))
+    print("Skipped gene list saved to:", SKIPPED_FILE)
+
+    if len(filtered_data) == 0:
+        print("ERROR: No interested genes were found in the dataset.")
+        return
+
     # 6. Normalize data
-    # 7. Run experiments with K = 2, 3, 4, 5, 6, ... ,13
+    normalized_data = min_max_normalize(filtered_data, expression_cols)
+    print("Normalization finished.")
+
+    # 7. Run experiments with different K values
+    k_values = [2, 3, 4, 5, 6]
+    max_iterations = 100
+
+    all_results = run_experiments(normalized_data, k_values, max_iterations)
+
     # 8. Save results
+    save_results(all_results, RESULT_FILE)
+
     # 9. Print final message
+    print("=" * 60)
+    print("PROGRAM FINISHED SUCCESSFULLY")
+    print("Experiment results saved to:", RESULT_FILE)
+    print("Skipped genes saved to:", SKIPPED_FILE)
 
 
 # ============================================================
