@@ -457,28 +457,62 @@ def find_best_cluster(cluster_summary):
 def save_results(all_results, filename):
     """
     Save experiment results to results.csv.
-
-    Return:
-        nothing
     """
-    # TODO:
-    # Save columns:
-    # K, iterations, SSE, cluster sizes,
-    # best cluster ID, known percentage, potential genes
+    f = open(filename, "w", encoding="utf-8")
+
+    f.write("K;Iterations;SSE;Cluster Sizes;Best Cluster ID;Best Cluster Known Percentage;Potential Candidate Genes\n")
+    
+    for res in all_results:
+   
+        sizes_str = "-".join(str(size) for size in res["cluster_sizes"])
+        
+
+        genes_str = ",".join(res["potential_genes"])
+        if genes_str == "":
+            genes_str = "None"
+            
+
+        line = "{};{};{:.4f};{};{};{:.2f}%;{}\n".format(
+            res["k"],
+            res["iterations"],
+            res["sse"],
+            sizes_str,
+            res["best_cluster_id"],
+            res["known_percentage"],
+            genes_str
+        )
+        f.write(line)
+        
+    f.close()
 
 
 def print_result_summary(k, clusters, sse, iterations_used, cluster_summary):
     """
     Print result summary on screen.
-
-    Return:
-        nothing
     """
-    # TODO:
-    # Print K
-    # Print iterations used
-    # Print SSE
-    # Print cluster summary
+    print("-" * 60)
+    print("EXPERIMENT SUMMARY FOR K = {}".format(k))
+    print("-" * 60)
+    print("Iterations Used : {}".format(iterations_used))
+    print("SSE (Error)     : {:.4f}".format(sse))
+    
+    print("\nCluster Details:")
+    for cluster in cluster_summary:
+        print("  - Cluster {}: Size = {}, Known = {}, Candidates = {}, Known % = {:.2f}%".format(
+            cluster["cluster_id"],
+            cluster["cluster_size"],
+            cluster["known_count"],
+            cluster["candidate_count"],
+            cluster["known_percentage"]
+        ))
+        
+    best = find_best_cluster(cluster_summary)
+    if best:
+        print("\n=> Best Cluster: Cluster {} (Highest Known % = {:.2f}%)".format(
+            best["cluster_id"], best["known_percentage"]
+        ))
+        print("=> Potential Genes inside: {}".format(", ".join(best["candidate_genes"]) if best["candidate_genes"] else "None"))
+    print("\n")
 
 
 # ============================================================
@@ -489,16 +523,44 @@ def print_result_summary(k, clusters, sse, iterations_used, cluster_summary):
 def run_experiments(data, k_values, max_iterations):
     """
     Run K-means with different K values.
-
-    Return:
-        all_results
     """
-    # TODO:
-    # For each K:
-    #   run kmeans
-    #   calculate SSE
-    #   summarize clusters
-    #   store result
+    all_results = []
+    
+    for k in k_values:
+        print("Running K-Means for K = {}...".format(k))
+        
+
+        clusters, centroids, iterations_used = kmeans(data, k, max_iterations)
+        
+
+        sse = calculate_sse(clusters, centroids)
+        
+
+        cluster_summary = summarize_clusters(clusters)
+        
+
+        best_cluster = find_best_cluster(cluster_summary)
+        
+
+        cluster_sizes = [c["cluster_size"] for c in cluster_summary]
+        
+
+        res_dict = {
+            "k": k,
+            "iterations": iterations_used,
+            "sse": sse,
+            "cluster_sizes": cluster_sizes,
+            "best_cluster_id": best_cluster["cluster_id"] if best_cluster else -1,
+            "known_percentage": best_cluster["known_percentage"] if best_cluster else 0.0,
+            "potential_genes": best_cluster["candidate_genes"] if best_cluster else []
+        }
+        
+        all_results.append(res_dict)
+        
+        # Hiển thị nhanh kết quả lên màn hình IDLE / Compiler để tiện theo dõi
+        print_result_summary(k, clusters, sse, iterations_used, cluster_summary)
+        
+    return all_results
 
 
 # ============================================================
